@@ -19,7 +19,7 @@ const resultPromise = (sql, data = []) => {
 
         conn.query(sql, data, (err, rows) => {
             try{
-                let data_result = { code: 200, data: rows, message: '' }
+                let data_result = { code: 200, data: rows}
                 if(err) data_result= { code: 406, data: {}, message: err.sqlMessage, sql: err.sql }
                 resolve(data_result);
             } catch(err) {
