@@ -1,5 +1,4 @@
 const sharp = require('sharp');
-const fs = require('fs').promises;
 
 const { listarImagenesFull, listarImagenFull } = require('../Models/Upload-model');
 const { insertTable } = require('../config/ConexDb');
@@ -14,18 +13,20 @@ const subirImagen = async (req, res) => {
         const file = req.file;
         const fullHost = `${req.protocol}://${req.hostname}:${req.socket.localPort}`;
 
-        const filename  = file.originalname;
-        const mime_type = file.mimetype
+        const quitar_extension = file.originalname.replace(/\.[^/.]+$/, "")
+
+        const filename  = `${quitar_extension.replace(" ", "_")}.webp`;
+        const mime_type = 'image/webp'
         const fieldname = file.fieldname
         const size = file.size
 
-        const compressed_image_buffer = await sharp(file.path)
+        const compressed_image_buffer = await sharp(file.buffer)
         .resize(720)
-        .jpeg({ quality: 80 })
+        .webp({ quality: 80 })
         .toBuffer();
 
         const data = await insertTable('image_metadata', {image_name: filename, mime_type, fieldname, size});
-        await insertTable('images', {image_data: compressed_image_buffer, cod_image_metadata: data.data, url: `${fullHost}/image/${data.data}`});
+        await insertTable('images', {image_data: compressed_image_buffer, cod_image_metadata: data.data, url: `${fullHost}/image/${data.data}/${filename}`});
 
         res.status(200).json({code: 200, message: 'Imagen cargada y comprimida exitosamente'});
         
@@ -39,7 +40,7 @@ const subirImagen = async (req, res) => {
 const verImagen = async (req, res) => {
     try {
 
-        const result = await listarImagenFull(req.params.id);
+        const result = await listarImagenFull(req.params.id, req.params.ruta);
         const data = result.data;
 
         if(data.lenght === 0) return res.status(404).json({ code: 404, message: 'Imagen no encontrada'});

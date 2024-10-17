@@ -5,7 +5,7 @@ const { listarImagenes, subirImagen, verImagen } = require('../Controllers/Uploa
 
 route.get('/', listarImagenes);
 route.post('/upload', upload.single('image'), subirImagen);
-route.get('/image/:id', verImagen);
+route.get('/image/:id/:ruta', verImagen);
 
 module.exports = route;
 

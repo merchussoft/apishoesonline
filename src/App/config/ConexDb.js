@@ -1,33 +1,33 @@
-const mysql2 = require('mysql2');
-
+const mysql2 = require('mysql2/promise');
 const { mysqlConfig } = require('./Config');
 
-const conn = mysql2.createConnection(mysqlConfig());
-conn.connect((err) => {
-    if(err) throw err;
-    console.log('Successful connection to the database');
-});
+const getConnection = async () => {
+    try {
+        const conn = mysql2.createConnection(mysqlConfig());
+        console.log('Successful connection to the database');
+        return conn;
+    } catch (err) {
+        console.err("Error al conectar a la base de datos =====> ", err);
+        throw err;
+    }
+}
 
-const resultPromise = (sql, data = []) => {
-    return new Promise((resolve, reject) => {
-        conn.query('SET lc_time_names = "es_ES"', (err) => {
-            if(err) {
-                console.log('Error al configurar el idioma de la session: ', err);
-                return;
-            }
-        });
-
-        conn.query(sql, data, (err, rows) => {
-            try{
-                let data_result = { code: 200, data: rows}
-                if(err) data_result= { code: 406, data: {}, message: err.sqlMessage, sql: err.sql }
-                resolve(data_result);
-            } catch(err) {
-                console.log('Error al realizar el query: ', err);
-                reject(err);
-            }
-        })
-    })
+const resultPromise = async (sql, data = []) => {
+    let conex;
+    try {
+        conex = await getConnection();
+        await conex.query('SET lc_time_names="es_ES"');
+        const [rows] = await conex.query(sql, data);
+        return {code: 200, data: rows }
+    } catch (err) {
+        console.error('Error al realizar el query: ', err);
+        return { code: 406, data: {}, message: err.sqlMessage, sql: err.sql || sql };
+    } finally {
+        if(conex){
+            await conex.end();
+            console.log('Conexion Cerrada...');
+        }
+    }
 }
 
 const obtieneDatos = async (data) => {
